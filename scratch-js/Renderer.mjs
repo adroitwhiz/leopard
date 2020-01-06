@@ -655,7 +655,7 @@ export default class Renderer {
   }
 
   stamp(spr) {
-    this._setFramebuffer(this._penSkin._framebuffer);
+    this._setFramebuffer(this._penSkin._framebufferInfo);
     this._renderLayers(spr);
   }
 
