@@ -300,7 +300,6 @@ export class Sprite extends SpriteBase {
       this
     );
 
-    clone._project = this._project;
     clone.triggers = this.triggers.map(
       trigger => new Trigger(trigger.trigger, trigger.options, trigger._script)
     );
@@ -319,6 +318,12 @@ export class Sprite extends SpriteBase {
     clone.parent = this;
     this.clones.push(clone);
 
+    // Add the clone at this sprite's index, putting this sprite directly in front of it
+    this._project._addTarget(
+      clone,
+      this._project._spritesAndClones.indexOf(this)
+    );
+
     // Trigger CLONE_START:
     const triggers = clone.triggers.filter(tr =>
       tr.matches(Trigger.CLONE_START)
@@ -333,9 +338,7 @@ export class Sprite extends SpriteBase {
 
     this.parent.clones = this.parent.clones.filter(clone => clone !== this);
 
-    this._project.runningTriggers = this._project.runningTriggers.filter(
-      ({ target }) => target !== this
-    );
+    this._project._removeTarget(this);
   }
 
   andClones() {

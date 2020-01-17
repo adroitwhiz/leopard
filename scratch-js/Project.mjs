@@ -4,14 +4,19 @@ import Input from "./Input.mjs";
 import { Stage } from "./Sprite.mjs";
 
 export default class Project {
-  constructor(stage, sprites = {}) {
+  constructor(stage, sprites = []) {
     this.stage = stage;
-    this.sprites = sprites;
+    this._spritesAndClones = [];
+    this._spritesByName = new Map();
 
-    for (const sprite of this.spritesAndClones) {
-      sprite._project = this;
+    for (const sprite of sprites) {
+      this._addTarget(sprite);
+      // TODO: constructor.name sounds like a shonky function that may cause the JS engine to deoptimize this.
+      // Sprites should be given a "name" property anyways;
+      // some valid sprite names (that may be dynamically accessed!) are not valid JS identifiers.
+      if (!sprite.name) sprite.name = sprite.constructor.name;
+      this._spritesByName.set(sprite.name, sprite);
     }
-    this.stage._project = this;
 
     this.renderer = new Renderer(this);
     this.input = new Input(this.stage, this.renderer.stage, key => {
@@ -27,6 +32,29 @@ export default class Project {
     this.playingSounds = [];
 
     this.step();
+  }
+
+  sprite(spriteName) {
+    return this._spritesByName.get(spriteName);
+  }
+
+  _addTarget(target, position) {
+    target._project = this;
+
+    if (position) {
+      this._spritesAndClones.splice(position, 0, target);
+    } else {
+      this._spritesAndClones.push(target);
+    }
+  }
+
+  _removeTarget(target) {
+    this._project.runningTriggers = this._project.runningTriggers.filter(
+      ({ triggerTarget }) => triggerTarget !== target
+    );
+
+    const index = this._spritesAndClones.indexOf(target);
+    this._spritesAndClones.splice(index, 1);
   }
 
   attach(renderTarget) {
@@ -87,7 +115,7 @@ export default class Project {
       ({ trigger }) => !trigger.done
     );
 
-    this.renderer.update(this.stage, this.spritesAndClones);
+    this.renderer.update(this.stage, this._spritesAndClones);
 
     window.requestAnimationFrame(this.step.bind(this));
   }
@@ -101,7 +129,9 @@ export default class Project {
 
       for (const spriteName in this.sprites) {
         const sprite = this.sprites[spriteName];
-        sprite.clones = [];
+        for (const clone of sprite.clones) {
+          clone.deleteThisClone();
+        }
       }
 
       for (const sprite of this.spritesAndStage) {
@@ -148,12 +178,8 @@ export default class Project {
     );
   }
 
-  get spritesAndClones() {
-    return Object.values(this.sprites).flatMap(sprite => sprite.andClones());
-  }
-
   get spritesAndStage() {
-    return [...this.spritesAndClones, this.stage];
+    return [...this._spritesAndClones, this.stage];
   }
 
   playSound(url) {

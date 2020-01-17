@@ -232,7 +232,7 @@ export default class Renderer {
     }
 
     // Sprites + clones
-    for (const sprite of this.project.spritesAndClones) {
+    for (const sprite of this.project._spritesAndClones) {
       // Stage doesn't have "visible" defined, so check if it's strictly false
       if (shouldIncludeLayer(sprite) && sprite.visible !== false) {
         this.renderSprite(
