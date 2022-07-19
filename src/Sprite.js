@@ -169,28 +169,12 @@ class SpriteBase {
     }
   }
 
-  degToRad(deg) {
-    return (deg * Math.PI) / 180;
-  }
-
-  radToDeg(rad) {
+  radToScratch(rad) {
     return (rad * 180) / Math.PI;
   }
 
-  degToScratch(deg) {
-    return -deg + 90;
-  }
-
-  scratchToDeg(scratchDir) {
-    return -scratchDir + 90;
-  }
-
-  radToScratch(rad) {
-    return this.degToScratch(this.radToDeg(rad));
-  }
-
   scratchToRad(scratchDir) {
-    return this.degToRad(this.scratchToDeg(scratchDir));
+    return (scratchDir * Math.PI) / 180;
   }
 
   // Wrap rotation from -180 to 180.

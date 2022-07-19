@@ -291,7 +291,7 @@ export default class Drawable {
       Matrix.translate(m, m, spr.x, spr.y);
       switch (spr.rotationStyle) {
         case Sprite.RotationStyle.ALL_AROUND: {
-          Matrix.rotate(m, m, spr.scratchToRad(spr.direction));
+          Matrix.rotate(m, m, spr.scratchToRad(90 - spr.direction));
           break;
         }
         case Sprite.RotationStyle.LEFT_RIGHT: {
