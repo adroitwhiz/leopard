@@ -11,12 +11,10 @@ type TriggerOptions = Partial<Record<string, TriggerOption>>;
 // TODO: Remove symbol property. This is for support with old-style triggers.
 // A unique function serves as a valid distinguisher and reduces the overall
 // type footprint.
-export type TriggerCreator =
-  ((
-    optionsOrScript: TriggerOptions | GeneratorFunction,
-    script?: GeneratorFunction
-  ) => Trigger)
-    & {symbol: symbol};
+export type TriggerCreator = ((
+  optionsOrScript: TriggerOptions | GeneratorFunction,
+  script?: GeneratorFunction
+) => Trigger) & { symbol: symbol };
 
 export default class Trigger {
   // TODO: Expose as TriggerCreator instead of symbol.
@@ -85,7 +83,8 @@ export default class Trigger {
       throw new Error("Expected target to check options against");
     }
 
-    const triggerSymbol = (typeof trigger === "function" ? trigger.symbol : trigger);
+    const triggerSymbol =
+      typeof trigger === "function" ? trigger.symbol : trigger;
     if (this.trigger !== triggerSymbol) return false;
 
     for (const option in options) {
@@ -130,16 +129,18 @@ export default class Trigger {
   public static matches(
     // TODO: Rework to not accept symbols. Just compare trigger and creator.
     trigger: TriggerCreator | symbol,
-    creator: TriggerCreator | symbol,
+    creator: TriggerCreator | symbol
   ): boolean {
-    const triggerSymbol = (typeof trigger === "symbol" ? trigger : trigger.symbol);
-    const creatorSymbol = (typeof creator === "symbol" ? creator : creator.symbol);
+    const triggerSymbol =
+      typeof trigger === "symbol" ? trigger : trigger.symbol;
+    const creatorSymbol =
+      typeof creator === "symbol" ? creator : creator.symbol;
     return triggerSymbol === creatorSymbol;
   }
 
   private static triggerCreatorHelper(symbolText: string): TriggerCreator {
     const symbol = Symbol(symbolText);
-    const triggerCreator: TriggerCreator = function(optionsOrScript, script) {
+    const triggerCreator: TriggerCreator = function (optionsOrScript, script) {
       return new Trigger(symbol, optionsOrScript, script);
     };
 
@@ -157,12 +158,18 @@ export default class Trigger {
    */
   public static readonly greenFlag = this.triggerCreatorHelper("GREEN_FLAG");
   public static readonly keyPressed = this.triggerCreatorHelper("KEY_PRESSED");
-  public static readonly receivedBroadcast = this.triggerCreatorHelper("BROADCAST");
+  public static readonly receivedBroadcast =
+    this.triggerCreatorHelper("BROADCAST");
   public static readonly clicked = this.triggerCreatorHelper("CLICKED");
-  public static readonly startedAsClone = this.triggerCreatorHelper("CLONE_START");
-  public static readonly loudnessGreaterThan = this.triggerCreatorHelper("LOUDNESS_GREATER_THAN");
-  public static readonly timerGreaterThan = this.triggerCreatorHelper("TIMER_GREATER_THAN");
-  public static readonly backdropChanged = this.triggerCreatorHelper("BACKDROP_CHANGED");
+  public static readonly startedAsClone =
+    this.triggerCreatorHelper("CLONE_START");
+  public static readonly loudnessGreaterThan = this.triggerCreatorHelper(
+    "LOUDNESS_GREATER_THAN"
+  );
+  public static readonly timerGreaterThan =
+    this.triggerCreatorHelper("TIMER_GREATER_THAN");
+  public static readonly backdropChanged =
+    this.triggerCreatorHelper("BACKDROP_CHANGED");
 
   /**
    * @deprecated
@@ -173,7 +180,8 @@ export default class Trigger {
   public static readonly BROADCAST = this.receivedBroadcast.symbol;
   public static readonly CLICKED = this.clicked.symbol;
   public static readonly CLONE_START = this.startedAsClone.symbol;
-  public static readonly LOUDNESS_GREATER_THAN = this.loudnessGreaterThan.symbol;
+  public static readonly LOUDNESS_GREATER_THAN =
+    this.loudnessGreaterThan.symbol;
   public static readonly TIMER_GREATER_THAN = this.timerGreaterThan.symbol;
   public static readonly BACKDROP_CHANGED = this.backdropChanged.symbol;
 }

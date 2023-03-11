@@ -192,7 +192,10 @@ export default class Project {
   }
 
   // TODO: Only accept TriggerCreator.
-  public fireTrigger(creator: TriggerCreator | symbol, options?: TriggerOptions): Promise<void> {
+  public fireTrigger(
+    creator: TriggerCreator | symbol,
+    options?: TriggerOptions
+  ): Promise<void> {
     // Special trigger behaviors
     if (Trigger.matches(creator, Trigger.greenFlag)) {
       this.restartTimer();
