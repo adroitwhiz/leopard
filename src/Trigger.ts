@@ -8,6 +8,8 @@ type TriggerOption =
 
 type TriggerOptions = Partial<Record<string, TriggerOption>>;
 
+type TriggerOptionsFor<Keys extends string> = { [key in Keys]: TriggerOption };
+
 // TODO: Remove symbol property. This is for support with old-style triggers.
 // A unique function serves as a valid distinguisher and reduces the overall
 // type footprint.
@@ -16,11 +18,52 @@ export type TriggerCreator = ((
   script?: GeneratorFunction
 ) => Trigger) & { symbol: symbol };
 
+type TriggerDescriptor<
+  Sym extends symbol = symbol,
+  OptionKeys extends readonly string[] = readonly string[],
+  IsEdgeActivated extends boolean = boolean
+> = {
+  readonly symbol: Sym;
+  readonly options: OptionKeys;
+  readonly isEdgeActivated: IsEdgeActivated;
+};
+
+const makeTrigger = <
+  Sym extends symbol | string,
+  OptionKeys extends readonly string[] | undefined = [],
+  IsEdgeActivated extends boolean | undefined = false
+>(
+  symbol: Sym,
+  // TODO: Use TypeScript 5.0 "const" type parameter modifier once TS 5.0 is released, so that we don't have to annotate
+  // this function parameter with "as const"
+  optionKeys?: OptionKeys,
+  isEdgeActivated?: IsEdgeActivated
+): TriggerDescriptor<
+  Sym extends string ? symbol : Sym,
+  OptionKeys extends undefined ? [] : OptionKeys,
+  IsEdgeActivated extends undefined ? false : IsEdgeActivated
+> =>
+  ({
+    symbol: typeof symbol === "string" ? Symbol(symbol) : symbol,
+    options: optionKeys ?? [],
+    isEdgeActivated: isEdgeActivated ?? false,
+  } as TriggerDescriptor<
+    Sym extends string ? symbol : Sym,
+    OptionKeys extends undefined ? [] : OptionKeys,
+    IsEdgeActivated extends undefined ? false : IsEdgeActivated
+  >);
+
+const TriggerGreenFlag = makeTrigger("GREEN_FLAG");
+const TriggerKeyPressed = makeTrigger("KEY_PRESSED", ["key"] as const);
+const TriggerReceivedBroadcast = makeTrigger("BROADCAST", ["name"] as const);
+const TriggerClicked = makeTrigger("CLICKED");
+
 export default class Trigger {
   // TODO: Expose as TriggerCreator instead of symbol.
   public trigger;
+  public isEdgeActivated: boolean;
 
-  private options: TriggerOptions;
+  protected options: TriggerOptions;
   private _script: GeneratorFunction;
   private _runningScript: Generator | undefined;
   public done: boolean;
@@ -28,7 +71,7 @@ export default class Trigger {
 
   public constructor(
     // TODO: Only accept TriggerCreator.
-    trigger: symbol | TriggerCreator,
+    trigger: symbol | TriggerDescriptor,
     optionsOrScript: TriggerOptions | GeneratorFunction,
     script?: GeneratorFunction
   ) {
@@ -51,13 +94,6 @@ export default class Trigger {
     this.stop = () => {};
   }
 
-  public get isEdgeActivated(): boolean {
-    return (
-      this.trigger === Trigger.TIMER_GREATER_THAN ||
-      this.trigger === Trigger.LOUDNESS_GREATER_THAN
-    );
-  }
-
   // Evaluate the given trigger option, whether it's a value or a function that
   // returns a value given a target
   public option(
@@ -74,8 +110,8 @@ export default class Trigger {
   }
 
   public matches(
-    // TODO: Rework to not accept a symbol. Just compare to TriggerCreator.
-    trigger: TriggerCreator | symbol,
+    // TODO: Rework to not accept a symbol. Just compare to Trigger.
+    trigger: Trigger | symbol,
     options?: Trigger["options"],
     target?: Sprite | Stage
   ): boolean {
@@ -83,9 +119,8 @@ export default class Trigger {
       throw new Error("Expected target to check options against");
     }
 
-    const triggerSymbol =
-      typeof trigger === "function" ? trigger.symbol : trigger;
-    if (this.trigger !== triggerSymbol) return false;
+    const triggerSymbol = typeof trigger === "object" ? trigger.type : trigger;
+    if (this.type !== triggerSymbol) return false;
 
     for (const option in options) {
       if (this.option(option, target!) !== options[option]) return false;
@@ -138,13 +173,14 @@ export default class Trigger {
     return triggerSymbol === creatorSymbol;
   }
 
-  private static triggerCreatorHelper(symbolText: string): TriggerCreator {
-    const symbol = Symbol(symbolText);
+  private static triggerCreatorHelper<T extends TriggerDescriptor>(
+    descriptor: T
+  ): TriggerCreator {
     const triggerCreator: TriggerCreator = function (optionsOrScript, script) {
-      return new Trigger(symbol, optionsOrScript, script);
+      return new Trigger(descriptor, optionsOrScript, script);
     };
 
-    triggerCreator.symbol = symbol;
+    triggerCreator.symbol = descriptor.symbol;
     return triggerCreator;
   }
 
